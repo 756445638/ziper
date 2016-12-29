@@ -10,10 +10,10 @@ import (
 	//"fmt"
 )
 
-type Ziper struct{
+type Targz struct{
 	dest string
 }
-func(z *Ziper)TarGz(path ,dest string)error{
+func(z *Targz)TarGz(path ,dest string)error{
 	// file write
 	fw, err := os.Create(dest)
 	if err != nil {
@@ -28,7 +28,7 @@ func(z *Ziper)TarGz(path ,dest string)error{
 	defer tw.Close()
 	return z.TargzFilesAndDirectory(tw,path,"")
 }
-func(z *Ziper)UnTarGz(src ,dest string)error{
+func(z *Targz)UnTarGz(src ,dest string)error{
 	fd,err := os.Open(src)
 	if err != nil{
 		return err
@@ -42,13 +42,13 @@ func(z *Ziper)UnTarGz(src ,dest string)error{
 	tarreader := tar.NewReader(gzreader)
 	for{
 		h,err := tarreader.Next()
-		if err ==io.EOF{
-			break
-		}
-		if err != nil{
-			return err
-		}
-		if h.FileInfo().IsDir(){
+			if err ==io.EOF{
+				break
+			}
+			if err != nil{
+				return err
+			}
+			if h.FileInfo().IsDir(){
 			os.MkdirAll(filepath.Join(dest,h.Name),h.FileInfo().Mode())
 			continue
 		}
@@ -66,20 +66,24 @@ func(z *Ziper)UnTarGz(src ,dest string)error{
 }
 
 
-
-
-
-func(z *Ziper)TargzFilesAndDirectory(w * tar.Writer,path string,rel string )error{
+func(z *Targz)TargzFilesAndDirectory(w * tar.Writer,path string,rel string )error{
 	fs,err := ioutil.ReadDir(path)
 	if err != nil{
 		return err
 	}
+	//fmt.Printf("prefix[%s] ",rel)
+	//for _,v := range fs{
+	//	fmt.Printf("%v ",v.Name())
+	//}
+	//fmt.Println()
+
 	for _,finfo := range fs {
 		if finfo.IsDir(){   //write directory
 			h,err := tar.FileInfoHeader(finfo,"")
 			if err != nil{
 				return err
 			}
+			h.Name = filepath.Join(rel,h.Name)
 			err = w.WriteHeader(h)
 			if err != nil {
 				return err
@@ -96,7 +100,6 @@ func(z *Ziper)TargzFilesAndDirectory(w * tar.Writer,path string,rel string )erro
 			return err
 		}
 		h.Name = filepath.Join(rel,finfo.Name())
-
 		err = w.WriteHeader(h)
 		if err != nil {
 			return err
