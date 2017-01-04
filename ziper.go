@@ -9,11 +9,7 @@ import (
 	"path/filepath"
 )
 
-type Targz struct {
-	dest string
-}
-
-func (z *Targz) TarGz(path, dest string) error {
+func TarGz(path, dest string) error {
 	// file write
 	fw, err := os.Create(dest)
 	if err != nil {
@@ -26,10 +22,10 @@ func (z *Targz) TarGz(path, dest string) error {
 	// tar write
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
-	return z.TargzFilesAndDirectory(tw, path, "")
+	return targzFilesAndDirectory(tw, path, "")
 }
 
-func (z *Targz) TargzFilesAndDirectory(w *tar.Writer, path string, rel string) error {
+func targzFilesAndDirectory(w *tar.Writer, path string, rel string) error {
 	fs, err := ioutil.ReadDir(path)
 	if err != nil {
 		return err
@@ -46,7 +42,7 @@ func (z *Targz) TargzFilesAndDirectory(w *tar.Writer, path string, rel string) e
 			if err != nil {
 				return err
 			}
-			err = z.TargzFilesAndDirectory(w, filepath.Join(path, finfo.Name()), filepath.Join(rel, finfo.Name()))
+			err = targzFilesAndDirectory(w, filepath.Join(path, finfo.Name()), filepath.Join(rel, finfo.Name()))
 			if err != nil {
 				return err
 			}
@@ -76,7 +72,7 @@ func (z *Targz) TargzFilesAndDirectory(w *tar.Writer, path string, rel string) e
 	return nil
 }
 
-func (z *Targz) UnTarGzFromReader(reader io.Reader, dest string) error {
+func UnTarGzFromReader(reader io.Reader, dest string) error {
 	gzreader, err := gzip.NewReader(reader)
 	if err != nil {
 		return err
@@ -108,7 +104,7 @@ func (z *Targz) UnTarGzFromReader(reader io.Reader, dest string) error {
 	return nil
 }
 
-func (z *Targz) UnTarGz(src, dest string) error {
+func UnTarGz(src, dest string) error {
 	fd, err := os.Open(src)
 	if err != nil {
 		return err
