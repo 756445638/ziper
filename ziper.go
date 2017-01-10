@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func TarGz(path, dest string) error {
+func TarGz(path []string, dest string) error {
 	// file write
 	fw, err := os.Create(dest)
 	if err != nil {
@@ -22,49 +22,48 @@ func TarGz(path, dest string) error {
 	// tar write
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
-	return targzFilesAndDirectory(tw, path, "")
+	for _, v := range path {
+		if e := targzFilesAndDirectory(tw, v, ""); e != nil {
+			return e
+		}
+	}
+	return nil
 }
 
 func targzFilesAndDirectory(w *tar.Writer, path string, rel string) error {
-	fs, err := ioutil.ReadDir(path)
+	//self
+	finfo, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
-
-	for _, finfo := range fs {
-		if finfo.IsDir() { //write directory
-			h, err := tar.FileInfoHeader(finfo, "")
-			if err != nil {
-				return err
-			}
-			h.Name = filepath.Join(rel, h.Name)
-			err = w.WriteHeader(h)
-			if err != nil {
-				return err
-			}
-			err = targzFilesAndDirectory(w, filepath.Join(path, finfo.Name()), filepath.Join(rel, finfo.Name()))
-			if err != nil {
-				return err
-			}
-			continue
-		}
-		//files
-		h, err := tar.FileInfoHeader(finfo, "")
-		if err != nil {
-			return err
-		}
-		h.Name = filepath.Join(rel, finfo.Name())
-		err = w.WriteHeader(h)
-		if err != nil {
-			return err
-		}
-		//write content
-		f, err := os.Open(filepath.Join(path, finfo.Name()))
+	h, err := tar.FileInfoHeader(finfo, "")
+	if err != nil {
+		return err
+	}
+	h.Name = filepath.Join(rel, h.Name)
+	err = w.WriteHeader(h)
+	if err != nil {
+		return err
+	}
+	if !finfo.IsDir() {
+		f, err := os.Open(path)
 		if err != nil {
 			return err
 		}
 		_, err = io.Copy(w, f)
 		f.Close()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	rel = filepath.Join(rel, finfo.Name())
+	fs, err := ioutil.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	for _, finfo := range fs {
+		err = targzFilesAndDirectory(w, filepath.Join(path, finfo.Name()), rel)
 		if err != nil {
 			return err
 		}
